@@ -2,6 +2,10 @@
 #include "SQLiteArchive.hpp"
 #include "Util.hpp"
 #include "Constants.hpp"
+#include "SQLiteRootDirectory.hpp"
+#include "SQLiteDirectory.hpp"
+#include "SQLiteFile.hpp"
+#include "SQLitePath.hpp"
 
 namespace SQLite {
 
@@ -23,42 +27,30 @@ namespace SQLite {
 		open(util::string::to_string(path));
 	}
 
-	//void Archive::open(const std::string& path) {
-	//	mDB = std::make_shared<SQLite::Database>(path.c_str(), SQLite::OPEN_CREATE | SQLite::OPEN_READWRITE);
-	//	SQLite::Statement stmt(*mDB, Constants::CREATE_TABLE);
-	//	stmt.exec();
-	//}
+	static std::string normalize(const std::string& path) {
+		return util::string::trim(util::string::replace(path, '\\', '/'), '/');
+	}
 
-	//void Archive::open(const std::wstring& path) {
-	//	open(util::string::to_string(path, CP_UTF8));
-	//}
+	std::shared_ptr<SQLite::Entry> Archive::get(const std::string& path) {
+		auto pathToFile = normalize(path);
 
-	//static std::string normalize(const std::string& path) {
-	//	return util::string::trim(util::string::replace(path, '\\', '/'), '/');
-	//}
+		if (pathToFile == "") {
+			return std::make_shared<SQLite::RootDirectory>(mDB);
+		}
 
-	//std::shared_ptr<SQLite::Entry> Archive::get(const std::string& path) {
-	//	auto pathToFile = normalize(path);
+		auto stmt = mDB->prepare(Constants::SELECT_FILE);
+		stmt.bind(":path", pathToFile);
 
-	//	if (pathToFile == "") {
-	//		return std::make_shared<SQLite::RootDirectory>(mDB);
-	//	}
+		if (!stmt.fetch()) {
+			return std::make_shared<SQLite::Path>(mDB, pathToFile);
+		}
+		if (stmt.getColumn("type").getInt() == Constants::DIRECTORY_TYPE) {
+			return std::make_shared<SQLite::Directory>(mDB, pathToFile);
+		}
+		return std::make_shared <SQLite::File>(mDB, pathToFile);
+	}
 
-	//	SQLite::Statement stmt(*mDB, Constants::SELECT_FILE);
-	//	stmt.bind(":path", pathToFile);
-
-	//	if (!stmt.executeStep()) {
-	//		return std::make_shared<SQLite::Path>(mDB, pathToFile);
-	//	}
-
-	//	if (stmt.getColumn("type").getInt() == Constants::DIRECTORY_TYPE) {
-	//		return std::make_shared<SQLite::Directory>(mDB, pathToFile);
-	//	}
-
-	//	return std::make_shared<SQLite::File>(mDB, pathToFile);
-	//}
-
-	//std::shared_ptr<SQLite::Entry> Archive::get(const std::wstring& path) {
-	//	return get(util::string::to_string(path, CP_UTF8));
-	//}
+	std::shared_ptr<SQLite::Entry> Archive::get(const std::wstring& path) {
+		return get(util::string::to_string(path));
+	}
 }

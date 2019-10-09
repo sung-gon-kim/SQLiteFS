@@ -1,47 +1,54 @@
 #include <gtest/gtest.h>
 #include <stdexcept>
-#include "Constants.hpp"
+#include "TestUtils.hpp"
 #include "../SQLiteFS/Constants.hpp"
 #include "../SQLiteFS/SQLiteArchive.hpp"
 
 class SQLiteArchiveTest : public ::testing::Test {
 protected:
-	constexpr static const wchar_t* UNKNOWN_PATH = L"\\폴더1\\폴더2\\폴더3";
-	constexpr static const wchar_t* ROOT_PATH = L"\\";
-	constexpr static const wchar_t* DIR_PATH = L"\\폴더1";
-	constexpr static const wchar_t* FILE_PATH = L"\\폴더1\\파일2.txt";
-
 	void SetUp() override {
-		auto db = std::make_shared<SQLite::Database>(Constants::DB_FILE);
-		db->execute(Constants::CREATE_TABLE);
-		auto stmt = db->prepare("INSERT INTO Files VALUES (:path, :type, :blob)");
-		stmt.bind(":path", "폴더1")
-			.bind(":type", Constants::DIRECTORY_TYPE)
-			.bind(":blob")
-			.execute();
-		stmt.reset();
-		stmt.bind(":path", "폴더1/폴더2")
-			.bind(":type", Constants::DIRECTORY_TYPE)
-			.bind(":blob")
-			.execute();
-		stmt.reset();
-		stmt.bind(":path", "파일1.txt")
-			.bind(":type", Constants::FILE_TYPE)
-			.bind(":blob", "파일1.txt")
-			.execute();
-		stmt.reset();
-		stmt.bind(":path", "폴더1/파일2.txt")
-			.bind(":type", Constants::FILE_TYPE)
-			.bind(":blob", "폴더1/파일2.txt")
-			.execute();
-		stmt.reset();
-		archive.open(db);
+		archive.open(TestUtils::populateDatabase());
 	}
 
 	SQLite::Archive archive;
 };
 
 TEST_F(SQLiteArchiveTest, testGetUnknownPath) {
-	auto file = archive.get(UNKNOWN_PATH);
+	auto file = archive.get(Constants::Test::UNKNOWN_PATH);
 	EXPECT_EQ("폴더1/폴더2/폴더3", file->getPath());
+	EXPECT_EQ("폴더1/폴더2", file->getDirname());
+	EXPECT_EQ("폴더3", file->getFilename());
+	EXPECT_FALSE(file->exist());
+	EXPECT_FALSE(file->isDirectory());
+	EXPECT_FALSE(file->isFile());
+}
+
+TEST_F(SQLiteArchiveTest, testGetRootPath) {
+	auto file = archive.get(Constants::Test::ROOT_PATH);
+	EXPECT_EQ("", file->getPath());
+	EXPECT_EQ("", file->getDirname());
+	EXPECT_EQ("", file->getFilename());
+	EXPECT_TRUE(file->exist());
+	EXPECT_TRUE(file->isDirectory());
+	EXPECT_FALSE(file->isFile());
+}
+
+TEST_F(SQLiteArchiveTest, testGetDirPath) {
+	auto file = archive.get(Constants::Test::DIR_PATH);
+	EXPECT_EQ("폴더1", file->getPath());
+	EXPECT_EQ("", file->getDirname());
+	EXPECT_EQ("폴더1", file->getFilename());
+	EXPECT_TRUE(file->exist());
+	EXPECT_TRUE(file->isDirectory());
+	EXPECT_FALSE(file->isFile());
+}
+
+TEST_F(SQLiteArchiveTest, testGetFilePath) {
+	auto file = archive.get(Constants::Test::FILE_PATH);
+	EXPECT_EQ("폴더1/파일2.txt", file->getPath());
+	EXPECT_EQ("폴더1", file->getDirname());
+	EXPECT_EQ("파일2.txt", file->getFilename());
+	EXPECT_TRUE(file->exist());
+	EXPECT_FALSE(file->isDirectory());
+	EXPECT_TRUE(file->isFile());
 }

@@ -1,22 +1,22 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <string>
-#include "Constants.hpp"
+#include "TestUtils.hpp"
 #include "../SQLiteFS/SQLiteDatabase.hpp"
 
 class SQLiteColumnTest : public ::testing::Test {
 protected:
 	void SetUp() override {
-		database = std::make_unique<SQLite::Database>(Constants::DB_FILE);
-		database->execute(Constants::TEST_CREATE_TABLE);
+		database = std::make_unique<SQLite::Database>(Constants::Test::DB_FILE);
+		database->execute(Constants::Test::CREATE_TABLE);
 	}
 
 	std::unique_ptr<SQLite::Database> database;
 };
 
 TEST_F(SQLiteColumnTest, testGetColumnData) {
-	database->execute(Constants::TEST_INSERT_DATA);
-	auto stmt = database->prepare(Constants::TEST_SELECT_ALL_DATA);
+	database->execute(Constants::Test::INSERT_DATA);
+	auto stmt = database->prepare(Constants::Test::SELECT_ALL_DATA);
 	stmt.fetch();
 	EXPECT_STREQ("first", stmt.getColumn(0).getName());
 	EXPECT_EQ(1, stmt.getColumn(0).getInt());
