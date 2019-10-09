@@ -15,13 +15,13 @@ namespace Constants {
 		"mtime TIMESTAMP NOT NULL DEFAULT (strftime('%s', 'now')))";
 
 	constexpr static const char* SELECT_FILE =
-		"SELECT path, type, blob, length(blob) as size, ctime, atime, mtime FROM Files WHERE path == :path";
+		"SELECT path, type, blob, length(cast(blob as blob)) as size, ctime, atime, mtime FROM Files WHERE path == :path";
 
 	constexpr static const char* SELECT_ROOT_FILES =
-		"SELECT path, type, blob, length(blob) as size, ctime, atime, mtime FROM Files WHERE path NOT LIKE '%/%'";
+		"SELECT path, type, blob, length(cast(blob as blob)) as size, ctime, atime, mtime FROM Files WHERE path NOT LIKE '%/%'";
 
 	constexpr static const char* SELECT_SUB_FILES =
-		"SELECT path, type, blob, length(blob) as size, ctime, atime, mtime FROM Files WHERE path LIKE :path";
+		"SELECT path, type, blob, length(cast(blob as blob)) as size, ctime, atime, mtime FROM Files WHERE path LIKE :path";
 
 	constexpr static const char* CREATE_DIRECTORY =
 		"INSERT INTO Files (path, type) VALUES (?, 1)";
