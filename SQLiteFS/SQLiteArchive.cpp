@@ -24,7 +24,7 @@ namespace SQLite {
 	}
 
 	void Archive::open(const std::wstring& path) {
-		open(util::string::to_string(path));
+		open(util::string::to_string(path, CP_UTF8));
 	}
 
 	static std::string normalize(const std::string& path) {
@@ -51,6 +51,6 @@ namespace SQLite {
 	}
 
 	std::shared_ptr<SQLite::Entry> Archive::get(const std::wstring& path) {
-		return get(util::string::to_string(path));
+		return get(util::string::to_string(path, CP_UTF8));
 	}
 }

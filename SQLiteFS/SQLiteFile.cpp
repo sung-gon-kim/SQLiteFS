@@ -21,7 +21,7 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::createFile(PDOKAN_IO_SECURITY_CONTEXT SecurityContext, ACCESS_MASK DesiredAccess, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_SUCCESS;
 	}
 
 	void DOKAN_CALLBACK File::closeFile(PDOKAN_FILE_INFO DokanFileInfo) {
@@ -45,11 +45,22 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::getFileInformation(LPBY_HANDLE_FILE_INFORMATION HandleFileInformation, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		auto stmt = getDB()->prepare(Constants::SELECT_FILE);
+		stmt.bind(":path", getPath());
+		if (stmt.fetch()) {
+			HandleFileInformation->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+			util::time::TimeToFileTime(stmt.getColumn("ctime").getInt64(), &HandleFileInformation->ftCreationTime);
+			util::time::TimeToFileTime(stmt.getColumn("atime").getInt64(), &HandleFileInformation->ftLastAccessTime);
+			util::time::TimeToFileTime(stmt.getColumn("mtime").getInt64(), &HandleFileInformation->ftLastWriteTime);
+			auto size = stmt.getColumn("size").getInt64();
+			HandleFileInformation->nFileSizeHigh = reinterpret_cast<PLARGE_INTEGER>(&size)->HighPart;
+			HandleFileInformation->nFileSizeLow = reinterpret_cast<PLARGE_INTEGER>(&size)->LowPart;
+		}
+		return STATUS_SUCCESS;
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::findFiles(PFillFindData FillFindData, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_NOT_A_DIRECTORY;
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::deleteFile(PDOKAN_FILE_INFO DokanFileInfo) {

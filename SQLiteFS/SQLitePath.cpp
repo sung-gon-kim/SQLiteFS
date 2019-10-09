@@ -20,7 +20,7 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::createFile(PDOKAN_IO_SECURITY_CONTEXT SecurityContext, ACCESS_MASK DesiredAccess, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_SUCCESS;
 	}
 
 	void DOKAN_CALLBACK Path::closeFile(PDOKAN_FILE_INFO DokanFileInfo) {
@@ -44,11 +44,11 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::getFileInformation(LPBY_HANDLE_FILE_INFORMATION HandleFileInformation, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_OBJECT_NAME_NOT_FOUND;;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::findFiles(PFillFindData FillFindData, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_OBJECT_NAME_NOT_FOUND;;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::deleteFile(PDOKAN_FILE_INFO DokanFileInfo) {

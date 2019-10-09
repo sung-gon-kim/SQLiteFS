@@ -7,7 +7,7 @@ namespace Constants {
 
 	constexpr static const char* CREATE_TABLE =
 		"CREATE TABLE IF NOT EXISTS Files("
-		"path TEXT NOT NULL UNIQUE, "
+		"path TEXT NOT NULL PRIMARY KEY, "
 		"type INTEGER NOT NULL DEFAULT 0, "
 		"blob BLOB, "
 		"ctime TIMESTAMP NOT NULL DEFAULT (strftime('%s', 'now')), "

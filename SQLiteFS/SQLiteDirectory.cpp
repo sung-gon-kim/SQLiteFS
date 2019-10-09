@@ -21,7 +21,7 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::createFile(PDOKAN_IO_SECURITY_CONTEXT SecurityContext, ACCESS_MASK DesiredAccess, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_SUCCESS;
 	}
 
 	void DOKAN_CALLBACK Directory::closeFile(PDOKAN_FILE_INFO DokanFileInfo) {
@@ -45,11 +45,44 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::getFileInformation(LPBY_HANDLE_FILE_INFORMATION HandleFileInformation, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		auto stmt = getDB()->prepare(Constants::SELECT_FILE);
+		stmt.bind(":path", getPath());
+		if (stmt.fetch()) {
+			HandleFileInformation->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+			util::time::TimeToFileTime(stmt.getColumn("ctime").getInt64(), &HandleFileInformation->ftCreationTime);
+			util::time::TimeToFileTime(stmt.getColumn("atime").getInt64(), &HandleFileInformation->ftLastAccessTime);
+			util::time::TimeToFileTime(stmt.getColumn("mtime").getInt64(), &HandleFileInformation->ftLastWriteTime);
+			auto size = stmt.getColumn("size").getInt64();
+			HandleFileInformation->nFileSizeHigh = reinterpret_cast<PLARGE_INTEGER>(&size)->HighPart;
+			HandleFileInformation->nFileSizeLow = reinterpret_cast<PLARGE_INTEGER>(&size)->LowPart;
+		}
+		return STATUS_SUCCESS;
+	}
+
+	static std::wstring to_wfilename(const std::string& path) {
+		return util::string::to_wstring(util::filesystem::filename(path, '/'), CP_UTF8);
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::findFiles(PFillFindData FillFindData, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		auto stmt = getDB()->prepare(Constants::SELECT_SUB_FILES);
+		stmt.bind(":path", getPath() + "%");
+		while (stmt.fetch()) {
+			auto path = stmt.getColumn("path").getString();
+			if (getPath() != util::filesystem::dirname(path, '/')) {
+				continue;
+			}
+			WIN32_FIND_DATAW data = {};
+			data.dwFileAttributes = (stmt.getColumn("type").getInt() == Constants::DIRECTORY_TYPE) ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+			wcscpy_s(data.cFileName, to_wfilename(path).c_str());
+			util::time::TimeToFileTime(stmt.getColumn("ctime").getInt64(), &data.ftCreationTime);
+			util::time::TimeToFileTime(stmt.getColumn("atime").getInt64(), &data.ftLastAccessTime);
+			util::time::TimeToFileTime(stmt.getColumn("mtime").getInt64(), &data.ftLastWriteTime);
+			auto size = stmt.getColumn("size").getInt64();
+			data.nFileSizeHigh = reinterpret_cast<PLARGE_INTEGER>(&size)->HighPart;
+			data.nFileSizeLow = reinterpret_cast<PLARGE_INTEGER>(&size)->LowPart;
+			FillFindData(&data, DokanFileInfo);
+		}
+		return STATUS_SUCCESS;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::deleteFile(PDOKAN_FILE_INFO DokanFileInfo) {
