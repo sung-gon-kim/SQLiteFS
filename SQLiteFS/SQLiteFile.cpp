@@ -1,5 +1,5 @@
-#include "Constants.hpp"
 #include "Util.hpp"
+#include "SQLitePreparedStatementFactory.hpp"
 #include "SQLiteFile.hpp"
 
 namespace SQLite {
@@ -29,11 +29,25 @@ namespace SQLite {
 	}
 
 	void DOKAN_CALLBACK File::cleanup(PDOKAN_FILE_INFO DokanFileInfo) {
+		if (DokanFileInfo->DeleteOnClose) {
+			if (!DokanFileInfo->IsDirectory) {
+				SQLite::PreparedStatementFactory(getDB()).remove(getPath()).execute();
+			}
+		}
 		return;
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::readFile(LPVOID Buffer, DWORD BufferLength, LPDWORD ReadLength, LONGLONG Offset, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		auto stmt = SQLite::PreparedStatementFactory(getDB()).findByName(getPath());
+		if (!stmt.fetch()) {
+			return STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+		auto blob = stmt.getColumn("blob").getBlob();
+		auto size = stmt.getColumn("size").getInt();
+		auto bytesToRead = (size - Offset < BufferLength) ? size - Offset : BufferLength;
+		std::memcpy(Buffer, static_cast<const char*>(blob) + Offset, bytesToRead);
+		*ReadLength = bytesToRead;
+		return STATUS_SUCCESS;
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::writeFile(LPCVOID Buffer, DWORD NumberOfBytesToWrite, LPDWORD NumberOfBytesWritten, LONGLONG Offset, PDOKAN_FILE_INFO DokanFileInfo) {
@@ -41,12 +55,11 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::flushFileBuffers(PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_SUCCESS;
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::getFileInformation(LPBY_HANDLE_FILE_INFORMATION HandleFileInformation, PDOKAN_FILE_INFO DokanFileInfo) {
-		auto stmt = getDB()->prepare(Constants::SELECT_FILE);
-		stmt.bind(":path", getPath());
+		auto stmt = SQLite::PreparedStatementFactory(getDB()).findByName(getPath());
 		if (stmt.fetch()) {
 			HandleFileInformation->dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
 			util::time::TimeToFileTime(stmt.getColumn("ctime").getInt64(), &HandleFileInformation->ftCreationTime);
@@ -64,11 +77,17 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::deleteFile(PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		if (!DokanFileInfo->DeleteOnClose) {
+			return STATUS_SUCCESS;
+		}
+		return STATUS_SUCCESS;
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::deleteDirectory(PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		if (!DokanFileInfo->DeleteOnClose) {
+			return STATUS_SUCCESS;
+		}
+		return STATUS_ACCESS_DENIED;
 	}
 
 	NTSTATUS DOKAN_CALLBACK File::moveFile(LPCWSTR NewFileName, BOOL ReplaceIfExisting, PDOKAN_FILE_INFO DokanFileInfo) {

@@ -1,4 +1,4 @@
-#include "Constants.hpp"
+#include "SQLitePreparedStatementFactory.hpp"
 #include "SQLiteDirectory.hpp"
 #include "Util.hpp"
 
@@ -29,11 +29,14 @@ namespace SQLite {
 	}
 
 	void DOKAN_CALLBACK Directory::cleanup(PDOKAN_FILE_INFO DokanFileInfo) {
+		if (DokanFileInfo->IsDirectory) {
+			SQLite::PreparedStatementFactory(getDB()).remove(getPath()).execute();
+		}
 		return;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::readFile(LPVOID Buffer, DWORD BufferLength, LPDWORD ReadLength, LONGLONG Offset, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_FILE_IS_A_DIRECTORY;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::writeFile(LPCVOID Buffer, DWORD NumberOfBytesToWrite, LPDWORD NumberOfBytesWritten, LONGLONG Offset, PDOKAN_FILE_INFO DokanFileInfo) {
@@ -41,12 +44,11 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::flushFileBuffers(PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_SUCCESS;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::getFileInformation(LPBY_HANDLE_FILE_INFORMATION HandleFileInformation, PDOKAN_FILE_INFO DokanFileInfo) {
-		auto stmt = getDB()->prepare(Constants::SELECT_FILE);
-		stmt.bind(":path", getPath());
+		auto stmt = SQLite::PreparedStatementFactory(getDB()).findByName(getPath());
 		if (stmt.fetch()) {
 			HandleFileInformation->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
 			util::time::TimeToFileTime(stmt.getColumn("ctime").getInt64(), &HandleFileInformation->ftCreationTime);
@@ -64,15 +66,14 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::findFiles(PFillFindData FillFindData, PDOKAN_FILE_INFO DokanFileInfo) {
-		auto stmt = getDB()->prepare(Constants::SELECT_SUB_FILES);
-		stmt.bind(":path", getPath() + "%");
+		auto stmt = SQLite::PreparedStatementFactory(getDB()).listFiles(getPath());
 		while (stmt.fetch()) {
 			auto path = stmt.getColumn("path").getString();
 			if (getPath() != util::filesystem::dirname(path, '/')) {
 				continue;
 			}
 			WIN32_FIND_DATAW data = {};
-			data.dwFileAttributes = (stmt.getColumn("type").getInt() == Constants::DIRECTORY_TYPE) ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+			data.dwFileAttributes = (stmt.getColumn("type").getInt() == SQLite::Directory::TYPE) ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
 			wcscpy_s(data.cFileName, to_wfilename(path).c_str());
 			util::time::TimeToFileTime(stmt.getColumn("ctime").getInt64(), &data.ftCreationTime);
 			util::time::TimeToFileTime(stmt.getColumn("atime").getInt64(), &data.ftLastAccessTime);
@@ -86,11 +87,21 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::deleteFile(PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		if (!DokanFileInfo->DeleteOnClose) {
+			return STATUS_SUCCESS;
+		}
+		return STATUS_ACCESS_DENIED;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::deleteDirectory(PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		if (!DokanFileInfo->DeleteOnClose) {
+			return STATUS_SUCCESS;
+		}
+		auto stmt = SQLite::PreparedStatementFactory(getDB()).listFiles(getPath());
+		if (stmt.fetch()) {
+			return STATUS_DIRECTORY_NOT_EMPTY;
+		}
+		return STATUS_SUCCESS;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::moveFile(LPCWSTR NewFileName, BOOL ReplaceIfExisting, PDOKAN_FILE_INFO DokanFileInfo) {

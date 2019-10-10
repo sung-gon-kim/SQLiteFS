@@ -1,4 +1,3 @@
-#include "Constants.hpp"
 #include "SQLitePath.hpp"
 
 namespace SQLite {
@@ -32,7 +31,7 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::readFile(LPVOID Buffer, DWORD BufferLength, LPDWORD ReadLength, LONGLONG Offset, PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::writeFile(LPCVOID Buffer, DWORD NumberOfBytesToWrite, LPDWORD NumberOfBytesWritten, LONGLONG Offset, PDOKAN_FILE_INFO DokanFileInfo) {
@@ -40,7 +39,7 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::flushFileBuffers(PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		return STATUS_SUCCESS;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::getFileInformation(LPBY_HANDLE_FILE_INFORMATION HandleFileInformation, PDOKAN_FILE_INFO DokanFileInfo) {
@@ -52,11 +51,17 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::deleteFile(PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		if (!DokanFileInfo->DeleteOnClose) {
+			return STATUS_SUCCESS;
+		}
+		return STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::deleteDirectory(PDOKAN_FILE_INFO DokanFileInfo) {
-		return STATUS_NOT_IMPLEMENTED;
+		if (!DokanFileInfo->DeleteOnClose) {
+			return STATUS_SUCCESS;
+		}
+		return STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::moveFile(LPCWSTR NewFileName, BOOL ReplaceIfExisting, PDOKAN_FILE_INFO DokanFileInfo) {

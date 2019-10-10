@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include "SQLiteArchive.hpp"
 #include "Util.hpp"
-#include "Constants.hpp"
+#include "SQLitePreparedStatementFactory.hpp"
 #include "SQLiteRootDirectory.hpp"
 #include "SQLiteDirectory.hpp"
 #include "SQLiteFile.hpp"
@@ -16,7 +16,7 @@ namespace SQLite {
 	void Archive::open(const std::string& path) {
 		try {
 			mDB = std::make_shared<SQLite::Database>(path);
-			mDB->execute(Constants::CREATE_TABLE);
+			SQLite::PreparedStatementFactory(mDB).createTable().execute();
 		}
 		catch (const std::runtime_error& e) {
 			throw std::invalid_argument(e.what());
@@ -38,13 +38,12 @@ namespace SQLite {
 			return std::make_shared<SQLite::RootDirectory>(mDB);
 		}
 
-		auto stmt = mDB->prepare(Constants::SELECT_FILE);
-		stmt.bind(":path", pathToFile);
+		auto stmt = SQLite::PreparedStatementFactory(mDB).findByName(pathToFile);
 
 		if (!stmt.fetch()) {
 			return std::make_shared<SQLite::Path>(mDB, pathToFile);
 		}
-		if (stmt.getColumn("type").getInt() == Constants::DIRECTORY_TYPE) {
+		if (stmt.getColumn("type").getInt() == SQLite::Directory::TYPE) {
 			return std::make_shared<SQLite::Directory>(mDB, pathToFile);
 		}
 		return std::make_shared <SQLite::File>(mDB, pathToFile);

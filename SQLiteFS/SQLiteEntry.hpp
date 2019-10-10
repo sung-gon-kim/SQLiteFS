@@ -1,6 +1,8 @@
 #pragma once
 
+#pragma warning (push, 0)
 #include <dokan/dokan.h>
+#pragma warning (pop)
 #include <memory>
 #include <string>
 #include "SQLiteDatabase.hpp"

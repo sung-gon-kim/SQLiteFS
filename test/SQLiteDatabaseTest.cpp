@@ -1,4 +1,6 @@
+#pragma warning(push, 0)
 #include <gtest/gtest.h>
+#pragma warning(pop)
 #include <memory>
 #include <stdexcept>
 #include "TestUtils.hpp"
@@ -16,10 +18,6 @@ protected:
 
 TEST_F(SQLiteDatabaseTest, testFailsWhenUnknownFileWithNoOptionGiven) {
 	EXPECT_THROW({ SQLite::Database o(Constants::Test::UNKNOWN_FILE, 0); }, std::runtime_error);
-}
-
-TEST_F(SQLiteDatabaseTest, testOKWhenUnknownFileWithDefaultOptionGiven) {
-	EXPECT_NO_THROW({ SQLite::Database o(Constants::Test::UNKNOWN_FILE); });
 }
 
 TEST_F(SQLiteDatabaseTest, testExecuteSimpleQueries) {

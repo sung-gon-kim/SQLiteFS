@@ -6,6 +6,8 @@ namespace SQLite {
 
 	class Directory : public Entry {
 	public:
+		constexpr static const int TYPE = 1;
+
 		Directory(std::shared_ptr<SQLite::Database> db, const std::string& path);
 
 		bool exist() const override;

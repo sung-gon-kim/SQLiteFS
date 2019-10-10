@@ -28,11 +28,11 @@
     <ClCompile Include="SQLiteFile.cpp" />
     <ClCompile Include="SQLiteFS.cpp" />
     <ClCompile Include="SQLitePath.cpp" />
+    <ClCompile Include="SQLitePreparedStatementFactory.cpp" />
     <ClCompile Include="SQLiteRootDirectory.cpp" />
     <ClCompile Include="SQLiteStatement.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Constants.hpp" />
     <ClInclude Include="DokanMain.hpp" />
     <ClInclude Include="SQLiteArchive.hpp" />
     <ClInclude Include="SQLiteColumn.hpp" />
@@ -42,6 +42,7 @@
     <ClInclude Include="SQLiteFile.hpp" />
     <ClInclude Include="SQLiteFS.hpp" />
     <ClInclude Include="SQLitePath.hpp" />
+    <ClInclude Include="SQLitePreparedStatementFactory.hpp" />
     <ClInclude Include="SQLiteRootDirectory.hpp" />
     <ClInclude Include="SQLiteStatement.hpp" />
     <ClInclude Include="Util.hpp" />

@@ -1,8 +1,8 @@
 #pragma once
 
-#pragma warning(push, 0)
+#pragma warning (push, 0)
 #include <Windows.h>
-#pragma warning(pop)
+#pragma warning (pop)
 #include <ctime>
 #include <algorithm>
 #include <memory>

@@ -9,6 +9,5 @@ namespace SQLite {
 		explicit RootDirectory(std::shared_ptr<SQLite::Database> db);
 
 		NTSTATUS DOKAN_CALLBACK getFileInformation(LPBY_HANDLE_FILE_INFORMATION HandleFileInformation, PDOKAN_FILE_INFO DokanFileInfo) override;
-		NTSTATUS DOKAN_CALLBACK findFiles(PFillFindData FillFindData, PDOKAN_FILE_INFO DokanFileInfo) override;
 	};
 }
