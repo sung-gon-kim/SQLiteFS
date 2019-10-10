@@ -29,8 +29,10 @@ namespace SQLite {
 	}
 
 	void DOKAN_CALLBACK Directory::cleanup(PDOKAN_FILE_INFO DokanFileInfo) {
-		if (DokanFileInfo->IsDirectory) {
-			SQLite::PreparedStatementFactory(getDB()).remove(getPath()).execute();
+		if (DokanFileInfo->DeleteOnClose) {
+			if (DokanFileInfo->IsDirectory) {
+				SQLite::PreparedStatementFactory(getDB()).remove(getPath()).execute();
+			}
 		}
 		return;
 	}
