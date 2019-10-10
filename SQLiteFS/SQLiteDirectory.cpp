@@ -21,6 +21,13 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Directory::createFile(PDOKAN_IO_SECURITY_CONTEXT SecurityContext, ACCESS_MASK DesiredAccess, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PDOKAN_FILE_INFO DokanFileInfo) {
+		if (CreateOptions & FILE_NON_DIRECTORY_FILE) {
+			return STATUS_FILE_IS_A_DIRECTORY;
+		}
+		if (CreateDisposition == OPEN_ALWAYS || CreateDisposition == CREATE_ALWAYS) {
+			return STATUS_OBJECT_NAME_COLLISION;
+		}
+		DokanFileInfo->IsDirectory = TRUE;
 		return STATUS_SUCCESS;
 	}
 

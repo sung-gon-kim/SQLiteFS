@@ -1,3 +1,4 @@
+#include "SQLitePreparedStatementFactory.hpp"
 #include "SQLitePath.hpp"
 
 namespace SQLite {
@@ -19,6 +20,12 @@ namespace SQLite {
 	}
 
 	NTSTATUS DOKAN_CALLBACK Path::createFile(PDOKAN_IO_SECURITY_CONTEXT SecurityContext, ACCESS_MASK DesiredAccess, ULONG FileAttributes, ULONG ShareAccess, ULONG CreateDisposition, ULONG CreateOptions, PDOKAN_FILE_INFO DokanFileInfo) {
+		if (DokanFileInfo->IsDirectory) {
+			if (CreateDisposition == OPEN_ALWAYS || CreateDisposition == CREATE_ALWAYS) {
+				SQLite::PreparedStatementFactory(getDB()).createDirectory(getPath()).execute();
+				return STATUS_SUCCESS;
+			}
+		}
 		return STATUS_SUCCESS;
 	}
 
